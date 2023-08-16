@@ -1,0 +1,71 @@
+<!doctype html>
+<head>
+	<link rel="stylesheet" href="/static/leaflet.css" />
+	<script src="/static/leaflet.js"></script>
+	<style>#map { height: 700px; }</style>
+</head>
+<body>
+	<select name="Hatlar" id="hatlar"></select>
+	<select name="Zamanlar" id="zamanlar"></select>
+	<button type="button" onclick='goruntule(`${hatlarjson[hatlist.selectedIndex]["Hatno"]}-${hatlarjson[hatlist.selectedIndex]["Hatyon"]}`,zamanlar[zamanlist.selectedIndex][1])'>Görüntüle</button>
+	<div id="map"></div>
+	<script>
+		var start = true;
+		let xmlHttpReq = new XMLHttpRequest();
+		hatlist=document.getElementById("hatlar");
+		zamanlist=document.getElementById("zamanlar");
+        xmlHttpReq.open("GET", "/api/zamanlar", false);
+        xmlHttpReq.send();
+        var zamanlar=JSON.parse(xmlHttpReq.responseText);
+        xmlHttpReq.open("GET", "/api/hatlar", false);
+		xmlHttpReq.send();
+        var hatlarjson=JSON.parse(xmlHttpReq.responseText);
+
+		var hatlist=document.getElementById('hatlar');
+		var zamanlist=document.getElementById('zamanlar');
+
+		for (var i=0; i<hatlarjson.length; i++) {
+			hatlist.add(new Option(`${hatlarjson[i]["Hatno"]} - ${hatlarjson[i]["Hatyon"]}`));
+		}
+		for (var i=0; i<zamanlar.length; i++) {
+			zamanlist.add(new Option(zamanlar[i][0]));
+		}
+		var circles = new Array();
+		var markers = new Array();
+		var map = L.map('map').setView([36.7793601,34.6055205], 12);
+		L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    	maxZoom: 19,
+    	attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+		}).addTo(map);
+
+		function goruntule(hat,zaman){
+
+		for (var i = 0; i < markers.length; i++) {
+			markers[i].remove()
+		}
+		for (var i = 0; i < circles.length; i++) {
+			circles[i].remove()
+		}
+
+		markers=new Array()
+		circles=new Array()
+		xmlHttpReq.open("GET",`/api/hattakiaraclar/${hat}/${zaman}`, false);
+		xmlHttpReq.send();
+        var hatzamanjson=JSON.parse(xmlHttpReq.responseText);
+
+		xmlHttpReq.open("GET",`/api/duraklar/${hat}`, false);
+		xmlHttpReq.send();
+        var duraklar=JSON.parse(xmlHttpReq.responseText);
+
+		for (let i = 0; i < hatzamanjson.length; i++) {
+			markers.push(L.marker(hatzamanjson[i]));
+			markers[i].addTo(map);
+		}
+		
+		for (let i = 0; i < duraklar.length; i++) {
+			circles.push(L.circle([duraklar[i][0],duraklar[i][1]], {radius: 30}));
+			circles[i].addTo(map);
+		}
+		}
+	</script>
+</body>
